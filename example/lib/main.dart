@@ -12,7 +12,7 @@ void main() {
     MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Flutter Rx BLE example'),
+          title: const Text('Flutter Rx BLE VitaBits'),
         ),
         body: MyApp(),
       ),
