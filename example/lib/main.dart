@@ -2,12 +2,14 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:fimber/fimber.dart';
 import 'package:flutter/material.dart';
 import 'package:rx_ble/rx_ble.dart';
 
 int time() => DateTime.now().millisecondsSinceEpoch;
 
 void main() {
+  Fimber.plantTree(DebugTree());
   runApp(
     MaterialApp(
       home: Scaffold(
@@ -116,16 +118,29 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> startScan() async {
+    List<String> approvedDeviceList = [
+      "Mi Band 3",
+      "Mi Smart Band 4",
+      "Nonin3230_502591753"
+    ];
     await for (final scanResult in RxBle.startScan()) {
       results[scanResult.deviceId] = scanResult;
       if (!mounted) return;
       setState(() {
-        returnValue = JsonEncoder.withIndent(" " * 2, (o) {
-          if (o is ScanResult) {
-            return o.toString();
-          } else {
-            return o;
+        returnValue = JsonEncoder.withIndent(" " * 2, (device) {
+          if (device is ScanResult) {
+            Fimber.d(device.toString());
+            // return device.toString();
+//            if(device.deviceName ) {
+//              return device.deviceName;
+//            }
+            if (approvedDeviceList.contains(device.deviceName))
+              return "Supported Device: " + device.toString();
           }
+          return "Not a Supported Device: " + device.toString();
+          //else {
+          //  return device;
+         // }
         }).convert(results);
       });
     }
@@ -306,7 +321,7 @@ class _MyAppState extends State<MyApp> {
               for (final scanResult in results.values)
                 RaisedButton(
                   child: Text(
-                    "connect(${scanResult.deviceId})",
+                    "connect(${scanResult.deviceName})",
                     style: TextStyle(fontFamily: 'DejaVuSansMono'),
                   ),
                   onPressed: wrapCall(() async {
