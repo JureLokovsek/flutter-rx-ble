@@ -5,8 +5,11 @@ import 'dart:typed_data';
 import 'package:fimber/fimber.dart';
 import 'package:flutter/material.dart';
 import 'package:rx_ble/rx_ble.dart';
+import 'package:rx_ble_testing/utils/app_route_navigator.dart';
 
-int time() => DateTime.now().millisecondsSinceEpoch;
+import 'bluetooth_screen.dart';
+
+ int getCurrentTime() => DateTime.now().millisecondsSinceEpoch;
 
 void main() {
   Fimber.plantTree(DebugTree());
@@ -14,7 +17,7 @@ void main() {
     MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Flutter Rx BLE VitaBits'),
+          title: const Text('Flutter Rx BLE Testing'),
         ),
         body: MyApp(),
       ),
@@ -70,7 +73,7 @@ class _MyAppState extends State<MyApp> {
   var returnValue;
   String deviceId;
   Exception returnError;
-  final results = <String, ScanResult>{};
+  final scannedResultsList = <String, ScanResult>{};
   var chars = Map<String, List<String>>();
   final uuidControl = TextEditingController();
   final mtuControl = TextEditingController();
@@ -79,6 +82,15 @@ class _MyAppState extends State<MyApp> {
   final randomWriteSize = TextEditingController(text: '100');
   var connectionState = BleConnectionState.disconnected;
   var isWorking = false;
+
+  //
+  String noninAddress = "00:1C:05:FF:4E:5B";
+  Stream<Uint8List> observeCharList;
+  List<String> approvedDeviceNameList = [
+    //  "Mi Band 3",
+    // "Mi Smart Band 4",
+    "Nonin3230_502591753"
+  ];
 
   Function wrapCall(Function fn) {
     return () async {
@@ -118,30 +130,19 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> startScan() async {
-    List<String> approvedDeviceList = [
-      "Mi Band 3",
-      "Mi Smart Band 4",
-      "Nonin3230_502591753"
-    ];
     await for (final scanResult in RxBle.startScan()) {
-      results[scanResult.deviceId] = scanResult;
+      scannedResultsList[scanResult.deviceId] = scanResult;
       if (!mounted) return;
       setState(() {
         returnValue = JsonEncoder.withIndent(" " * 2, (device) {
           if (device is ScanResult) {
-            Fimber.d(device.toString());
-            // return device.toString();
-//            if(device.deviceName ) {
-//              return device.deviceName;
-//            }
-            if (approvedDeviceList.contains(device.deviceName))
-              return "Supported Device: " + device.toString();
+//            Fimber.d(device.toString());
+//            if (approvedDeviceNameList.contains(device.deviceName))
+//              return "Supported: " + device.toString();
+            return "Device: " + device.toString();
           }
-          return "Not a Supported Device: " + device.toString();
-          //else {
-          //  return device;
-         // }
-        }).convert(results);
+          return "Other: " + device.toString();
+        }).convert(scannedResultsList);
       });
     }
   }
@@ -163,9 +164,9 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> observeChar() async {
-    var start = time();
+    var start = getCurrentTime();
     await for (final value in RxBle.observeChar(deviceId, uuidControl.text)) {
-      final end = time();
+      final end = getCurrentTime();
       if (!mounted) return;
       setState(() {
         returnValue = value.toString() +
@@ -173,7 +174,7 @@ class _MyAppState extends State<MyApp> {
             RxBle.charToString(value, allowMalformed: true) +
             "\n\nDelay: ${(end - start)} ms";
       });
-      start = time();
+      start = getCurrentTime();
     }
   }
 
@@ -202,17 +203,17 @@ class _MyAppState extends State<MyApp> {
         ),
       );
     });
-    final start = time();
+    final start = getCurrentTime();
     await Future.wait(futures);
-    final end = time();
+    final end = getCurrentTime();
     return "${end - start} ms";
   }
 
   Future<void> continuousRead() async {
     while (true) {
-      final start = time();
+      final start = getCurrentTime();
       final value = await RxBle.readChar(deviceId, uuidControl.text);
-      final end = time();
+      final end = getCurrentTime();
       if (!mounted) return;
       setState(() {
         returnValue = value.toString() +
@@ -315,13 +316,25 @@ class _MyAppState extends State<MyApp> {
                 ),
                 onPressed: wrapCall(RxBle.stopScan),
               ),
+              ///// TODO: work here!
+              RaisedButton(
+                child: Text(
+                  "Open Bluetooth Screen",
+                  style: TextStyle(fontFamily: 'DejaVuSansMono'),
+                ),
+                onPressed: ()=> {
+                  wrapCall(RxBle.stopScan),
+                  AppNavigator().navigateToStatelessWidget(context, BluetoothScreen()), //
+                }
+              ),
+              ///// TODO: work here!
               Divider(),
-              if (results.isEmpty)
+              if (scannedResultsList.isEmpty)
                 Text('Start scanning to connect to a device'),
-              for (final scanResult in results.values)
+              for (final scanResult in scannedResultsList.values)
                 RaisedButton(
                   child: Text(
-                    "connect(${scanResult.deviceName})",
+                    "connect(${scanResult.deviceId})", // button wil show device mac address
                     style: TextStyle(fontFamily: 'DejaVuSansMono'),
                   ),
                   onPressed: wrapCall(() async {

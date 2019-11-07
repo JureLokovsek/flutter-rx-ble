@@ -1,4 +1,4 @@
-name: rx_ble_vita_bits
+name: rx_ble_testing
 description: Demonstrates how to use the rx_ble plugin.
 publish_to: 'none'
 
