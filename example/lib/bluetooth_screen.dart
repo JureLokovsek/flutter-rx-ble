@@ -17,6 +17,7 @@ class BluetoothScreen extends StatelessWidget {
   var isWorking = false;
   // testing stuff
   final String deviceAddress = "E3:22:C4:77:73:E8";
+  final String deviceMiBand3BatteryUUID = "00000006-0000-3512-2118-0009af100700";
   Stream<Uint8List> observeCharList;
   List<String> approvedDeviceNameList = [
     //  "Mi Band 3",
@@ -39,6 +40,7 @@ class BluetoothScreen extends StatelessWidget {
           raisedButtonStopScan(context, "Stop Scan...Show in Log"),
           raisedButtonConnect(context, "Connect"),
           raisedButtonDisconnect(context, "Disconnect"),
+          raisedButtonReadCharacteristic(context, "ReadCharacteristic"),
         ],
       ),
     );
@@ -113,22 +115,36 @@ class BluetoothScreen extends StatelessWidget {
     );
   }
 
+  RaisedButton raisedButtonReadCharacteristic(BuildContext context, String buttonName) {
+    return RaisedButton(
+      padding: EdgeInsets.only(left: 50.0, right: 50.0),
+      color: Theme.of(context).primaryColorDark,
+      textColor: Theme.of(context).primaryColorLight,
+      child: Text(buttonName, textScaleFactor: 1.5),
+        onPressed: () async {
+          await RxBle.stopScan();
+//          await for (final state in RxBle.connect(deviceAddress)) {
+////            Fimber.d("Device state $state");
+////            //  connectionState = state;
+////          }
+          readChar();
+        });
+  }
+
   Future<void> startScan() async {
     await for (final scanResult in RxBle.startScan()) {
       Fimber.d("Scaned Device " + scanResult.toString());
-     // scannedResultsList[scanResult.deviceId] = scanResult;
-     // if (!mounted) return;
-
-      //  returnValue = JsonEncoder.withIndent(" " * 2, (device) {
-         // if (device is ScanResult) {
-//            Fimber.d(device.toString());
-//            if (approvedDeviceNameList.contains(device.deviceName))
-//              return "Supported: " + device.toString();
-         // }
-       //   return "Other: " + device.toString();
-       // }).convert(scannedResultsList);
     }
   }
+
+  Future<void> readChar() async {
+    final value = await RxBle.readChar(deviceAddress, deviceMiBand3BatteryUUID);
+//    return value.toString() +
+//        "\n\n" +
+//        RxBle.charToString(value, allowMalformed: true);
+  Fimber.d("Raw data: " + RxBle.charToString(value, allowMalformed: true) + " Value: " + value.toString());
+  }
+
 }
 
 
