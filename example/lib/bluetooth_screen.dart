@@ -9,22 +9,20 @@ import 'package:rx_ble/rx_ble.dart';
 // ignore: must_be_immutable
 class BluetoothScreen extends StatelessWidget {
 
-  final String deviceAddress = "00:1C:05:FF:4E:5B";
- // Stream<Uint8List> observeCharList;
- // var observeCharList = Stream<Uint8List>();
 
   var returnValue;
   String deviceId;
   Exception returnError;
-  final scannedResultsList = <String, ScanResult>{};
-  var chars = Map<String, List<String>>();
-  final uuidControl = TextEditingController();
-  final mtuControl = TextEditingController();
-  final writeCharValueControl = TextEditingController();
-  final randomWriteNum = TextEditingController(text: '100');
-  final randomWriteSize = TextEditingController(text: '100');
   var connectionState = BleConnectionState.disconnected;
   var isWorking = false;
+  // testing stuff
+  final String deviceAddress = "E3:22:C4:77:73:E8";
+  Stream<Uint8List> observeCharList;
+  List<String> approvedDeviceNameList = [
+    //  "Mi Band 3",
+    // "Mi Smart Band 4",
+    "Nonin3230_502591753"
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -92,12 +90,13 @@ class BluetoothScreen extends StatelessWidget {
       color: Theme.of(context).primaryColorDark,
       textColor: Theme.of(context).primaryColorLight,
       child: Text(buttonName, textScaleFactor: 1.5),
-      onPressed: () {
-        Fimber.d("Click: $buttonName");
-
-        // do stuff
-      },
-    );
+      onPressed: () async {
+        await RxBle.stopScan();
+        await for (final state in RxBle.connect(deviceAddress)) {
+          Fimber.d("Device state $state");
+        //  connectionState = state;
+        }
+      });
   }
 
   RaisedButton raisedButtonDisconnect(BuildContext context, String buttonName) {
@@ -109,6 +108,7 @@ class BluetoothScreen extends StatelessWidget {
       onPressed: () {
         Fimber.d("Click: $buttonName");
         // do stuff
+        RxBle.disconnect();
       },
     );
   }
