@@ -1,9 +1,11 @@
 import 'dart:typed_data';
 
 import 'package:fimber/fimber.dart';
+import 'package:fimber/fimber.dart' as prefix0;
 import 'package:flutter/material.dart';
 
 import 'package:rx_ble/rx_ble.dart';
+import 'package:rx_ble_testing/testting_stuff/MiBand3BatteryInfo.dart';
 
 
 // ignore: must_be_immutable
@@ -138,11 +140,12 @@ class BluetoothScreen extends StatelessWidget {
   }
 
   Future<void> readChar() async {
-    final value = await RxBle.readChar(deviceAddress, deviceMiBand3BatteryUUID);
+    Uint8List value = await RxBle.readChar(deviceAddress, deviceMiBand3BatteryUUID);
 //    return value.toString() +
 //        "\n\n" +
 //        RxBle.charToString(value, allowMalformed: true);
-  Fimber.d("Raw data: " + RxBle.charToString(value, allowMalformed: true) + " Value: " + value.toString());
+    MiBand3BatteryInfo miBand3 = MiBand3BatteryInfo.fromRawData(value);
+    Fimber.d("Battery level: " + miBand3.getLevelInPercent().toString() +"% Raw data: " + miBand3.getRawData());
   }
 
 }
