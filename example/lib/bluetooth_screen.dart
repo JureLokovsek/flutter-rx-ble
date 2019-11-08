@@ -140,12 +140,21 @@ class BluetoothScreen extends StatelessWidget {
   }
 
   Future<void> readChar() async {
-    Uint8List value = await RxBle.readChar(deviceAddress, deviceMiBand3BatteryUUID);
-//    return value.toString() +
-//        "\n\n" +
-//        RxBle.charToString(value, allowMalformed: true);
-    MiBand3BatteryInfo miBand3 = MiBand3BatteryInfo.fromRawData(value);
-    Fimber.d("Battery level: " + miBand3.getLevelInPercent().toString() +"% Raw data: " + miBand3.getRawData());
+   // Uint8List value = await RxBle.readChar(deviceAddress, deviceMiBand3BatteryUUID);
+    // MiBand3BatteryInfo miBand3 = MiBand3BatteryInfo.fromRawData(value);
+    //  Fimber.d("Battery level: " + miBand3.getLevelInPercent().toString() +"% Raw data: " + miBand3.getRawData());
+
+    MiBand3BatteryInfo miBand3;
+    RxBle.readChar(deviceAddress, deviceMiBand3BatteryUUID)
+        .asStream()
+        .listen((data) => {
+    miBand3 = MiBand3BatteryInfo.fromRawData(data),
+    Fimber.d("Battery level: " + miBand3.getLevelInPercent().toString() +"% Raw data: " + miBand3.getRawData()),
+      }
+    ).onDone(() => {
+      Fimber.d("onDone Called"),
+      RxBle.disconnect(),
+    });
   }
 
 }
