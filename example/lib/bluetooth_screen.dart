@@ -11,14 +11,14 @@ import 'package:rx_ble_testing/testting_stuff/MiBand3BatteryInfo.dart';
 // ignore: must_be_immutable
 class BluetoothScreen extends StatelessWidget {
 
-
   var returnValue;
   String deviceId;
   Exception returnError;
   var connectionState = BleConnectionState.disconnected;
   var isWorking = false;
   // testing stuff
-  final String deviceAddress = "E3:22:C4:77:73:E8";
+ // final String deviceAddress = "E3:22:C4:77:73:E8"; // Mi Band 3
+  final String deviceAddress = "F1:6E:71:52:2C:E7"; // Mi Band 4
   final String deviceMiBand3BatteryUUID = "00000006-0000-3512-2118-0009af100700";
   Stream<Uint8List> observeCharList;
   List<String> approvedDeviceNameList = [
@@ -140,20 +140,17 @@ class BluetoothScreen extends StatelessWidget {
   }
 
   Future<void> readChar() async {
-   // Uint8List value = await RxBle.readChar(deviceAddress, deviceMiBand3BatteryUUID);
+    // Uint8List value = await RxBle.readChar(deviceAddress, deviceMiBand3BatteryUUID);
     // MiBand3BatteryInfo miBand3 = MiBand3BatteryInfo.fromRawData(value);
     //  Fimber.d("Battery level: " + miBand3.getLevelInPercent().toString() +"% Raw data: " + miBand3.getRawData());
 
-    MiBand3BatteryInfo miBand3;
-    RxBle.readChar(deviceAddress, deviceMiBand3BatteryUUID)
-        .asStream()
-        .listen((data) => {
-    miBand3 = MiBand3BatteryInfo.fromRawData(data),
-    Fimber.d("Battery level: " + miBand3.getLevelInPercent().toString() +"% Raw data: " + miBand3.getRawData()),
-      }
-    ).onDone(() => {
-      Fimber.d("onDone Called"),
-      RxBle.disconnect(),
+    RxBle.readChar(deviceAddress, deviceMiBand3BatteryUUID).asStream()
+        .map((data) => MiBand3BatteryInfo.fromRawData(data))
+        .listen((miBand3) => {
+          Fimber.d("Battery level: ${miBand3.getLevelInPercent()}%"),
+    }).onDone(() =>
+    {
+          RxBle.disconnect(),
     });
   }
 
