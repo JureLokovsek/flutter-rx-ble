@@ -19,6 +19,7 @@ class BluetoothScreen extends StatelessWidget {
   // testing stuff
  // final String deviceAddress = "E3:22:C4:77:73:E8"; // Mi Band 3
   final String deviceAddress = "F1:6E:71:52:2C:E7"; // Mi Band 4
+  final String deviceAddressNonin = "00:1C:05:FF:4E:5B"; // Mi Band 4
   final String deviceMiBand3BatteryUUID = "00000006-0000-3512-2118-0009af100700";
   Stream<Uint8List> observeCharList;
   List<String> approvedDeviceNameList = [
@@ -42,7 +43,8 @@ class BluetoothScreen extends StatelessWidget {
           raisedButtonStopScan(context, "Stop Scan...Show in Log"),
           raisedButtonConnect(context, "Connect"),
           raisedButtonDisconnect(context, "Disconnect"),
-          raisedButtonReadCharacteristic(context, "ReadCharacteristic"),
+          raisedButtonReadCharacteristic(context, "Read MiBand 3/4 Battery Characteristic"),
+          raisedButtonReadNonimCharacteristic(context, "Read Nonin Raw Data Characteristic"),
         ],
       ),
     );
@@ -150,8 +152,27 @@ class BluetoothScreen extends StatelessWidget {
           Fimber.d("Battery level: ${miBand3.getLevelInPercent()}%"),
     }).onDone(() =>
     {
-          RxBle.disconnect(),
+      Fimber.d("Delaying disconnect for 3 Seconds"),
+      Future.delayed(Duration(seconds: 3)).then((_){
+        Fimber.d("Disconnected!");
+        RxBle.disconnect();
+      })
+         // RxBle.disconnect(),
     });
+  }
+
+  // TODO: get raw data from nonin
+  RaisedButton raisedButtonReadNonimCharacteristic(BuildContext context, String buttonName) {
+    return RaisedButton(
+        padding: EdgeInsets.only(left: 50.0, right: 50.0),
+        color: Theme.of(context).primaryColorDark,
+        textColor: Theme.of(context).primaryColorLight,
+        child: Text(buttonName, textScaleFactor: 1.5),
+        onPressed: () async {
+          RxBle.stopScan();
+          // PLX_SPOT_CHECK_MEASUREMENT_CHARACTERISTIC
+          RxBle.observeChar(deviceAddressNonin, "00002A5E-0000-1000-8000-00805f9b34fb");
+        });
   }
 
 }

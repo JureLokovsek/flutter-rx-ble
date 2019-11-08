@@ -4,13 +4,11 @@ class MiBand3BatteryInfo {
 
   Uint8List _rawValue;
 
-  MiBand3BatteryInfo();
-
   MiBand3BatteryInfo.fromRawData(this._rawValue);
 
   int getLevelInPercent() {
-    if (this._rawValue != null) {
-      if (_rawValue.length >= 1) {
+    if (_rawValue != null) {
+      if (_rawValue.length >= 1 && _rawValue[1] != null) {
         return _rawValue[1];
       }
       return 50; // actually unknown
