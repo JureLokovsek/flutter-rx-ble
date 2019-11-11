@@ -5,7 +5,7 @@ import 'package:fimber/fimber.dart' as prefix0;
 import 'package:flutter/material.dart';
 
 import 'package:rx_ble/rx_ble.dart';
-import 'package:rx_ble_testing/testting_stuff/MiBand3BatteryInfo.dart';
+import 'package:rx_ble_testing/testting_stuff/Mi_band3_batteryInfo.dart';
 
 
 // ignore: must_be_immutable
@@ -21,6 +21,8 @@ class BluetoothScreen extends StatelessWidget {
   final String deviceAddress = "F1:6E:71:52:2C:E7"; // Mi Band 4
   final String deviceAddressNonin = "00:1C:05:FF:4E:5B"; // Mi Band 4
   final String deviceMiBand3BatteryUUID = "00000006-0000-3512-2118-0009af100700";
+  final String setupControlPointNotification = "1447af80-0d60-11e2-88b6-0002a5d5c51b";
+  //
   Stream<Uint8List> observeCharList;
   List<String> approvedDeviceNameList = [
     //  "Mi Band 3",
@@ -170,9 +172,63 @@ class BluetoothScreen extends StatelessWidget {
         child: Text(buttonName, textScaleFactor: 1.5),
         onPressed: () async {
           RxBle.stopScan();
-          // PLX_SPOT_CHECK_MEASUREMENT_CHARACTERISTIC
-          RxBle.observeChar(deviceAddressNonin, "00002A5E-0000-1000-8000-00805f9b34fb");
-        });
+
+          Uint8List value;
+          String controlPoint = "1447af80-0d60-11e2-88b6-0002a5d5c51b"; // step¸1
+          String measurementIndications = "1447af80-0d60-11e2-88b6-0002a5d5c51b"; // step 2
+
+          await for (final scanResult in RxBle.startScan()) {
+            Fimber.d("Scaned Device " + scanResult.toString());
+            if(scanResult.deviceName == "Nonin3230_502591753") {
+              RxBle.stopScan();
+              await for (final state in RxBle.connect(deviceAddressNonin)) {
+                Fimber.d("Device state $state");
+                connectionState = state;
+                if(connectionState == BleConnectionState.connected) {
+                 // RxBle.writeChar(deviceAddressNonin, controlPoint, value);
+                  //
+                  RxBle.observeChar(deviceAddressNonin, measurementIndications)
+                      .listen((data) => {
+                    for (var value1 in data) {
+                      Fimber.d("Data: $value1"),
+                    }
+
+                  }).onDone(() =>
+                  {
+                    Fimber.d("Delaying disconnect for 3 Seconds"),
+                    Future.delayed(Duration(seconds: 3)).then((_){
+                      Fimber.d("Disconnected!");
+                      RxBle.disconnect();
+                    })
+                    // RxBle.disconnect(),
+                  });
+                  //
+                }
+              }
+
+
+            }
+          }
+
+
+
+
+//          RxBle.observeChar(deviceAddressNonin, measurementIndications)
+//              .listen((data) => {
+//                for (var value1 in data) {
+//                  Fimber.d("Data: $value1"),
+//                }
+//
+//          }).onDone(() =>
+//          {
+//            Fimber.d("Delaying disconnect for 3 Seconds"),
+//            Future.delayed(Duration(seconds: 3)).then((_){
+//              Fimber.d("Disconnected!");
+//              RxBle.disconnect();
+//            })
+//          });
+
+          });
   }
 
 }
