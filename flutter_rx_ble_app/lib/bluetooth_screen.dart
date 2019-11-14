@@ -17,8 +17,8 @@ class BluetoothScreen extends StatelessWidget {
   var connectionState = BleConnectionState.disconnected;
   var isWorking = false;
   // testing stuff
- // final String deviceAddress = "E3:22:C4:77:73:E8"; // Mi Band 3
-  final String deviceAddress = "F1:6E:71:52:2C:E7"; // Mi Band 4
+  final String deviceAddress = "E3:22:C4:77:73:E8"; // Mi Band 3
+ // final String deviceAddress = "F1:6E:71:52:2C:E7"; // Mi Band 4
   final String deviceAddressNonin = "00:1C:05:FF:4E:5B"; // Mi Band 4
   final String deviceMiBand3BatteryUUID = "00000006-0000-3512-2118-0009af100700";
   final String setupControlPointNotification = "1447af80-0d60-11e2-88b6-0002a5d5c51b";
@@ -128,13 +128,26 @@ class BluetoothScreen extends StatelessWidget {
       textColor: Theme.of(context).primaryColorLight,
       child: Text(buttonName, textScaleFactor: 1.5),
         onPressed: () async {
-          await RxBle.stopScan();
-//          await for (final state in RxBle.connect(deviceAddress)) {
-////            Fimber.d("Device state $state");
-////            //  connectionState = state;
-////          }
-          readChar();
+          // await RxBle.stopScan();
+          // readChar();
+          getBatterylevelMiBand();
         });
+  }
+
+  void getBatterylevelMiBand() {
+  //  var filterMac = (mac) => deviceAddress;
+   // Stream<ScanResult> scanResultsStream = RxBle.startScan();
+    RxBle.startScan()
+    .where((device) => filterMac(device.deviceId))
+    .listen((deviceId) => {
+      Fimber.d("Device found: $deviceId")
+    }).onDone(() =>{
+      RxBle.disconnect()
+    });
+  }
+
+  bool filterMac(String mac) {
+    return mac == deviceAddress ? true : false;
   }
 
   Future<void> startScan() async {
