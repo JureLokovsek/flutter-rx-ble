@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:fimber/fimber.dart';
 import 'package:flutter/material.dart';
 import 'package:rx_ble/rx_ble.dart';
+import 'package:rx_ble_testing/rx_test_screen.dart';
 import 'package:rx_ble_testing/utils/app_route_navigator.dart';
 
 import 'bluetooth_screen.dart';
@@ -326,6 +327,15 @@ class _MyAppState extends State<MyApp> {
                   wrapCall(RxBle.stopScan),
                   AppNavigator().navigateToStatelessWidget(context, BluetoothScreen()), //
                 }
+              ),
+              RaisedButton(
+                  child: Text(
+                    "Open Movie Screen",
+                    style: TextStyle(fontFamily: 'DejaVuSansMono'),
+                  ),
+                  onPressed: ()=> {
+                    AppNavigator().navigateToStatefulWidget(context, RxTestScreen()), //
+                  }
               ),
               ///// TODO: work here!
               Divider(),
