@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import 'package:rx_ble/rx_ble.dart';
 import 'package:rx_ble_testing/testting_stuff/Mi_band3_batteryInfo.dart';
+import 'package:rxdart/rxdart.dart';
 
 
 // ignore: must_be_immutable
@@ -130,24 +131,64 @@ class BluetoothScreen extends StatelessWidget {
         onPressed: () async {
           // await RxBle.stopScan();
           // readChar();
-          getBatterylevelMiBand();
+          getBatteryLevelMiBand();
         });
   }
 
-  void getBatterylevelMiBand() {
+  void getBatteryLevelMiBand() {
   //  var filterMac = (mac) => deviceAddress;
    // Stream<ScanResult> scanResultsStream = RxBle.startScan();
-    RxBle.startScan()
+    Observable(RxBle.startScan())
+    .map((item) => item)
+    .doOnData((data) => {
+      Fimber.d("JL :: onData: $data")
+    })
+    .doOnError((error) => {
+      Fimber.d("JL :: Error: $error")
+    })
+    //.take(20)
+      //  .interval(Duration(seconds: 1))
+    //.takeWhile((device) => filterMac(device.deviceId))
     .where((device) => filterMac(device.deviceId))
-    .listen((deviceId) => {
-      Fimber.d("Device found: $deviceId")
-    }).onDone(() =>{
-      RxBle.disconnect()
-    });
+    //.where((device) => filterMac(device.deviceId))
+        .listen((device)=>{
+      RxBle.stopScan(),
+      Observable(RxBle.connect(device.deviceId))
+      .listen((connectionState) => {
+        Fimber.d("JL :: Ble Connection State: $connectionState"),
+        if(connectionState == BleConnectionState.connected) {
+         Observable(RxBle.readChar(deviceAddress, deviceMiBand3BatteryUUID).asStream())
+          .doOnData((data) => {
+            Fimber.d("JL :: Data Stream: $data")
+         })
+          .take(1)
+             .map((data) => MiBand3BatteryInfo.fromRawData(data))
+          .listen((miBand3BatteryInfo) => {
+            Fimber.d("JL :: Value:" + miBand3BatteryInfo.getLevelInPercent().toString()),
+         // RxBle.disconnect(),
+
+         }).onDone(() => {
+           Fimber.d("JL :: onDone"),
+           RxBle.disconnect(),
+         })
+
+        } else {
+          Fimber.d("JL :: Not connected"),
+        }
+      })
+        });
+
+//    RxBle.startScan()
+//    .where((device) => filterMac(device.deviceId))
+//    .listen((deviceId) => {
+//      Fimber.d("Device found: $deviceId")
+//    }).onDone(() =>{
+//      RxBle.disconnect()
+//    });
   }
 
   bool filterMac(String mac) {
-    return mac == deviceAddress ? true : false;
+    return mac == deviceAddress;
   }
 
   Future<void> startScan() async {
