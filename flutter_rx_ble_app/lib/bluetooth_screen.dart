@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:fimber/fimber.dart';
-import 'package:fimber/fimber.dart' as prefix0;
 import 'package:flutter/material.dart';
 
 import 'package:rx_ble/rx_ble.dart';
@@ -73,8 +72,24 @@ class BluetoothScreen extends StatelessWidget {
       child: Text(buttonName, textScaleFactor: 1.5),
       onPressed: () {
         Fimber.d("Click: $buttonName");
-        startScan();
-        // do stuff
+        int i = 0;
+        Observable(RxBle.startScan())
+        .take(50)
+        .doOnData((scannedDevice) => {
+         // Fimber.d("Scanned Device Address: " + scannedDevice.deviceId),
+        })
+        //.interval(Duration(milliseconds: 1000 * 15))
+        .doOnError((onError) => {
+          RxBle.stopScan(),
+          Fimber.d("onError :: $onError")
+        })
+        .listen((onData) => {
+          i++,
+          Fimber.d("$i Device: " + onData.toString()),
+        }).onDone(() => ({
+          Fimber.d("OnDone:"),
+          RxBle.stopScan()
+        }));
       },
     );
   }
@@ -136,8 +151,6 @@ class BluetoothScreen extends StatelessWidget {
   }
 
   void getBatteryLevelMiBand() {
-  //  var filterMac = (mac) => deviceAddress;
-   // Stream<ScanResult> scanResultsStream = RxBle.startScan();
     Observable(RxBle.startScan())
     .map((item) => item)
     .doOnData((data) => {
@@ -146,12 +159,8 @@ class BluetoothScreen extends StatelessWidget {
     .doOnError((error) => {
       Fimber.d("JL :: Error: $error")
     })
-    //.take(20)
-      //  .interval(Duration(seconds: 1))
-    //.takeWhile((device) => filterMac(device.deviceId))
     .where((device) => filterMac(device.deviceId))
-    //.where((device) => filterMac(device.deviceId))
-        .listen((device)=>{
+    .listen((device)=>{
       RxBle.stopScan(),
       Observable(RxBle.connect(device.deviceId))
       .listen((connectionState) => {
@@ -165,56 +174,19 @@ class BluetoothScreen extends StatelessWidget {
              .map((data) => MiBand3BatteryInfo.fromRawData(data))
           .listen((miBand3BatteryInfo) => {
             Fimber.d("JL :: Value: " + miBand3BatteryInfo.getLevelInPercent().toString()+"%"),
-         // RxBle.disconnect(),
-
          }).onDone(() => {
            Fimber.d("JL :: onDone"),
            RxBle.disconnect(),
          })
-
         } else {
           Fimber.d("JL :: Not connected"),
         }
       })
         });
-
-//    RxBle.startScan()
-//    .where((device) => filterMac(device.deviceId))
-//    .listen((deviceId) => {
-//      Fimber.d("Device found: $deviceId")
-//    }).onDone(() =>{
-//      RxBle.disconnect()
-//    });
   }
 
   bool filterMac(String mac) {
     return mac == deviceAddress;
-  }
-
-  Future<void> startScan() async {
-    await for (final scanResult in RxBle.startScan()) {
-      Fimber.d("Scaned Device " + scanResult.toString());
-    }
-  }
-
-  Future<void> readChar() async {
-    // Uint8List value = await RxBle.readChar(deviceAddress, deviceMiBand3BatteryUUID);
-    // MiBand3BatteryInfo miBand3 = MiBand3BatteryInfo.fromRawData(value);
-    //  Fimber.d("Battery level: " + miBand3.getLevelInPercent().toString() +"% Raw data: " + miBand3.getRawData());
-
-    RxBle.readChar(deviceAddress, deviceMiBand3BatteryUUID).asStream()
-        .map((data) => MiBand3BatteryInfo.fromRawData(data))
-        .listen((miBand3) => {
-          Fimber.d("Battery level: ${miBand3.getLevelInPercent()}%"),
-    }).onDone(() =>
-    {
-      Fimber.d("Delaying disconnect for 3 Seconds"),
-      Future.delayed(Duration(seconds: 3)).then((_){
-        Fimber.d("Disconnected!");
-        RxBle.disconnect();
-      })
-         // RxBle.disconnect(),
-    });
   }
 
   // TODO: get raw data from nonin
