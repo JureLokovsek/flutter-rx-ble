@@ -157,14 +157,14 @@ class BluetoothScreen extends StatelessWidget {
       .listen((connectionState) => {
         Fimber.d("JL :: Ble Connection State: $connectionState"),
         if(connectionState == BleConnectionState.connected) {
-         Observable(RxBle.readChar(deviceAddress, deviceMiBand3BatteryUUID).asStream())
+         Observable.fromFuture(RxBle.readChar(deviceAddress, deviceMiBand3BatteryUUID))
           .doOnData((data) => {
             Fimber.d("JL :: Data Stream: $data")
          })
           .take(1)
              .map((data) => MiBand3BatteryInfo.fromRawData(data))
           .listen((miBand3BatteryInfo) => {
-            Fimber.d("JL :: Value:" + miBand3BatteryInfo.getLevelInPercent().toString()),
+            Fimber.d("JL :: Value: " + miBand3BatteryInfo.getLevelInPercent().toString()+"%"),
          // RxBle.disconnect(),
 
          }).onDone(() => {
