@@ -330,7 +330,7 @@ class _MyAppState extends State<MyApp> {
               ),
               RaisedButton(
                   child: Text(
-                    "Open Movie Screen",
+                    "Open Rx Test Screen",
                     style: TextStyle(fontFamily: 'DejaVuSansMono'),
                   ),
                   onPressed: ()=> {

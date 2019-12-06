@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:rx_ble/rx_ble.dart';
 import 'package:rx_ble_testing/testting_stuff/Mi_band3_batteryInfo.dart';
+import 'package:rx_ble_testing/utils.dart';
 import 'package:rxdart/rxdart.dart';
 
 
@@ -17,8 +18,8 @@ class BluetoothScreen extends StatelessWidget {
   var connectionState = BleConnectionState.disconnected;
   var isWorking = false;
   // testing stuff
-  final String deviceAddress = "E3:22:C4:77:73:E8"; // Mi Band 3
- // final String deviceAddress = "F1:6E:71:52:2C:E7"; // Mi Band 4
+ // final String deviceAddress = "E3:22:C4:77:73:E8"; // Mi Band 3
+  final String deviceAddress = "F1:6E:71:52:2C:E7"; // Mi Band 4
   final String deviceAddressNonin = "00:1C:05:FF:4E:5B"; // Mi Band 4
   final String deviceMiBand3BatteryUUID = "00000006-0000-3512-2118-0009af100700";
   final String setupControlPointNotification = "1447af80-0d60-11e2-88b6-0002a5d5c51b";
@@ -143,7 +144,7 @@ class BluetoothScreen extends StatelessWidget {
       color: Theme.of(context).primaryColorDark,
       textColor: Theme.of(context).primaryColorLight,
       child: Text(buttonName, textScaleFactor: 1.5),
-        onPressed: () async {
+        onPressed: () {
           // await RxBle.stopScan();
           // readChar();
           getBatteryLevelMiBand();
@@ -190,71 +191,87 @@ class BluetoothScreen extends StatelessWidget {
   }
 
   // TODO: get raw data from nonin
-  RaisedButton raisedButtonReadNonimCharacteristic(BuildContext context, String buttonName) {
+  RaisedButton raisedButtonReadNonimCharacteristic(BuildContext context,
+      String buttonName) {
     return RaisedButton(
         padding: EdgeInsets.only(left: 50.0, right: 50.0),
-        color: Theme.of(context).primaryColorDark,
-        textColor: Theme.of(context).primaryColorLight,
+        color: Theme
+            .of(context)
+            .primaryColorDark,
+        textColor: Theme
+            .of(context)
+            .primaryColorLight,
         child: Text(buttonName, textScaleFactor: 1.5),
-        onPressed: () async {
-          RxBle.stopScan();
+        onPressed: () {
+          getNonin();
+        });
+  }
 
-          Uint8List value;
-          String controlPoint = "1447af80-0d60-11e2-88b6-0002a5d5c51b"; // step¸1
-          String measurementIndications = "1447af80-0d60-11e2-88b6-0002a5d5c51b"; // step 2
+  void getNonin() {
+    RxBle.startScan()
+        .where((device) => Utils.filterAddress(device.deviceId, "00:1C:05:FF:4E:5B"))
+        .take(1)
+        .listen((device) => {
+       Fimber.d("Device Found: " + device.deviceName +" Id: " + device.deviceId),
+      RxBle.stopScan(),
+      RxBle.connect(device.deviceId)
+      .listen((status) => {
+      if(status == BleConnectionState.connected) {
+        Fimber.d("Connected"),
+        writeChar(device.deviceId),
+        observeChar(device.deviceId),
+//        RxBle.writeChar(device.deviceId, "1447af80-0d60-11e2-88b6-0002a5d5c51b", Uint8List.fromList([]))
+//            .then((values) => {
+//            Fimber.d("Values: " + values.toString()),
 
-          await for (final scanResult in RxBle.startScan()) {
-            Fimber.d("Scaned Device " + scanResult.toString());
-            if(scanResult.deviceName == "Nonin3230_502591753") {
-              RxBle.stopScan();
-              await for (final state in RxBle.connect(deviceAddressNonin)) {
-                Fimber.d("Device state $state");
-                connectionState = state;
-                if(connectionState == BleConnectionState.connected) {
-                 // RxBle.writeChar(deviceAddressNonin, controlPoint, value);
-                  //
-                  RxBle.observeChar(deviceAddressNonin, measurementIndications)
-                      .listen((data) => {
-                    for (var value1 in data) {
-                      Fimber.d("Data: $value1"),
-                    }
+//          RxBle.writeChar(device.deviceId, "1447af80-0d60-11e2-88b6-0002a5d5c51b", Uint8List.fromList([2]))
+//          .then((ok) => {
+//            for(int i=0; i<ok.length; i++) {
+//              Fimber.d("OK: " + ok.elementAt(i).toString() +" Index: " + i.toString()),
+//            },
+//            Fimber.d("Disconnect"),
+//            RxBle.disconnect(),
+//          }),
+       // }),
+      }})
 
-                  }).onDone(() =>
-                  {
-                    Fimber.d("Delaying disconnect for 3 Seconds"),
-                    Future.delayed(Duration(seconds: 3)).then((_){
-                      Fimber.d("Disconnected!");
-                      RxBle.disconnect();
-                    })
-                    // RxBle.disconnect(),
-                  });
-                  //
-                }
-              }
+    });
 
-
-            }
-          }
-
-
-
-
-//          RxBle.observeChar(deviceAddressNonin, measurementIndications)
-//              .listen((data) => {
-//                for (var value1 in data) {
-//                  Fimber.d("Data: $value1"),
-//                }
+//    Observable(RxBle.startScan())
+//        .map((item) => item)
+//        .doOnData((data) => {
+//      Fimber.d("JL :: onData: $data")
+//        })
+//        .doOnError((error) => {
+//      Fimber.d("JL :: Error: $error")
+//        })
+//        .where((device) => Utils.filterAddress(device.deviceId, "00:1C:05:FF:4E:5B"))
+//        .listen((device)=>{
+//      RxBle.stopScan(),
+//      Observable(RxBle.connect(device.deviceId))
+//          .listen((connectionState) => {
+//        Fimber.d("JL :: Ble Connection State: $connectionState"),
+//        if(connectionState == BleConnectionState.connected) {
 //
-//          }).onDone(() =>
-//          {
-//            Fimber.d("Delaying disconnect for 3 Seconds"),
-//            Future.delayed(Duration(seconds: 3)).then((_){
-//              Fimber.d("Disconnected!");
-//              RxBle.disconnect();
-//            })
-//          });
+//        } else {
+//          Fimber.d("JL :: Not connected"),
+//        }
+//      })
+//    });
 
-          });
+  }
+
+  Future<void> observeChar(String deviceId) async {
+    await for (final value in RxBle.observeChar(deviceId, "1447af80-0d60-11e2-88b6-0002a5d5c51b")) {
+      Fimber.d("Val:" + value.toString() +" Other: " + RxBle.charToString(value, allowMalformed: true));
+      }
+    }
+
+  Future<void> writeChar(String deviceId) async {
+    Uint8List list = Uint8List(2);
+    list[0] = 0x61;
+    list[1] = 0x11;
+    return await RxBle.writeChar(deviceId, "1447af80-0d60-11e2-88b6-0002a5d5c51b", list);
   }
 
 }
